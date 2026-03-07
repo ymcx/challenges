@@ -5,21 +5,24 @@
 
 using namespace std;
 
-vector<string> restoreIpAddresses(string str, int iteration = 0) {
-  if (iteration == 3) {
-    if ((str != "0" && str.starts_with('0')) || str.size() < 1 ||
-        3 < str.size()) {
-      return {};
+bool isValidPart(string part) {
+  return (part == "0" || !part.starts_with("0")) && 1 <= part.size() &&
+         part.size() <= 3 && stoi(part) <= 255;
+}
+
+vector<string> restoreIpAddresses(string str, int iteration = 1) {
+  if (iteration == 4) {
+    if (isValidPart(str)) {
+      return {str};
     }
 
-    return {str};
+    return {};
   }
 
   vector<string> strs;
-  for (size_t length = 1; length < 4; ++length) {
+  for (size_t length = 1; length <= 3; ++length) {
     string left = str.substr(0, length);
-    if ((left != "0" && left.starts_with('0')) || 255 < stoi(left) ||
-        str.size() <= length) {
+    if (!isValidPart(left) || str.size() <= length) {
       break;
     }
 
