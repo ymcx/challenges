@@ -1,5 +1,3 @@
-// TODO: fix getPermutation(3, 2) == "132"
-
 #include <algorithm>
 #include <cassert>
 #include <string>
@@ -26,25 +24,39 @@ string vectorToString(vector<int> &input) {
 }
 
 string getPermutation(int n, int k) {
+  // The first element should be 0 instead of 1
   --k;
 
-  int length = factorial(n) / n;
-  int number = k / length + 1;
-  vector<int> numbers = {number};
+  // The length of the run consisting of the values that share the first number
+  int group_length = factorial(n) / n;
 
-  for (int i = n - 1; i > 0; --i) {
-    k %= length;
-    length /= i;
-    number = k / length + 1;
+  // Groups should use one based indexing
+  int group = k / group_length + 1;
+  vector<int> permutation = {group};
 
-    while (find(numbers.begin(), numbers.end(), number) != numbers.end()) {
-      ++number;
+  while (1 < n) {
+    // The sub-permutation consists of n-m items
+    // when conditioning on the previous m items
+    --n;
+
+    // Map k to the new length
+    k %= group_length;
+    group_length = factorial(n) / n;
+    group = k / group_length + 1;
+
+    // We'll need to account for previous values
+    // in the permutation since no duplicates are allowed
+    vector<int> permutation_sorted(permutation.size());
+    partial_sort_copy(permutation.begin(), permutation.end(),
+                      permutation_sorted.begin(), permutation_sorted.end());
+    for (const int &group_old : permutation_sorted) {
+      group += group_old <= group;
     }
 
-    numbers.push_back(number);
+    permutation.push_back(group);
   }
 
-  return vectorToString(numbers);
+  return vectorToString(permutation);
 }
 
 int main() {
