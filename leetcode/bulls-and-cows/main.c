@@ -1,9 +1,6 @@
-#include "queue.c"
 #include <assert.h>
-#include <stdbool.h>
 #include <stdio.h>
 #include <string.h>
-#include <uthash.h>
 
 char *getHint(char *secret, char *guess) {
   int bulls = 0;
