@@ -1,0 +1,110 @@
+#pragma once
+
+#include "point.h"
+#include <numeric>
+#include <optional>
+#include <string>
+#include <unordered_set>
+#include <vector>
+
+using namespace std;
+
+unordered_set<Point> coordinates(const vector<string> &board,
+                                 const vector<char> &targets);
+
+template <typename T, typename F>
+vector<F> map(const vector<T> &input, F function(T)) {
+  vector<F> output;
+  output.reserve(input.size());
+
+  for (auto i : input) {
+    auto res = function(i);
+    output.push_back(res);
+  }
+
+  return output;
+}
+
+template <typename T> int sum(const T &input) {
+  return accumulate(input.begin(), input.end(), 0);
+}
+
+template <typename T, typename F>
+vector<F> filter_map(const vector<T> &input, optional<F> function(T)) {
+  vector<F> output;
+  output.reserve(input.size());
+
+  for (auto i : input) {
+    auto res = function(i);
+    if (res.has_value()) {
+      output.push_back(res.value());
+    }
+  }
+
+  return output;
+}
+
+template <typename T>
+vector<T> filter(const vector<T> &input, bool function(T)) {
+  vector<T> output;
+  output.reserve(input.size());
+
+  for (auto i : input) {
+    auto res = function(i);
+    if (res) {
+      output.push_back(i);
+    }
+  }
+
+  return output;
+}
+
+template <typename T, typename F>
+vector<T> filter(const vector<T> &input, optional<F> function(T)) {
+  vector<T> output;
+  output.reserve(input.size());
+
+  for (auto i : input) {
+    auto res = function(i);
+    if (res.has_value()) {
+      output.push_back(i);
+    }
+  }
+
+  return output;
+}
+
+template <typename T, typename F>
+void each(const vector<T> &input, F function(T)) {
+  for (auto i : input) {
+    function(i);
+  }
+}
+
+template <typename T> bool contains(const vector<T> &input, T value) {
+  return find(input.begin(), input.end(), value) != input.end();
+}
+
+template <typename T, typename F>
+vector<F> keys(const unordered_map<F, T> &map) {
+  vector<F> keys;
+  keys.reserve(map.size());
+
+  for (auto [key, _] : map) {
+    keys.push_back(key);
+  }
+
+  return keys;
+}
+
+template <typename T, typename F>
+vector<T> values(const unordered_map<F, T> &map) {
+  vector<T> values;
+  values.reserve(map.size());
+
+  for (auto [_, value] : map) {
+    values.push_back(value);
+  }
+
+  return values;
+}
