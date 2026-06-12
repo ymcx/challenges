@@ -5,13 +5,13 @@
 
 using namespace std;
 
-size_t get_length(string input) {
+int lengthOfLongestSubstring(const string &s) {
   unordered_map<char, size_t> seen;
   size_t start = 0;
   size_t best = 0;
 
-  for (size_t i = 0; i < input.size(); ++i) {
-    char c = input[i];
+  for (size_t i = 0; i < s.size(); ++i) {
+    char c = s[i];
     if (seen.count(c)) {
       start = max(start, seen[c] + 1);
     }
@@ -24,7 +24,7 @@ size_t get_length(string input) {
 }
 
 int main() {
-  assert(get_length("abcabcbb") == 3);
-  assert(get_length("bbbbb") == 1);
-  assert(get_length("pwwkew") == 3);
+  assert(lengthOfLongestSubstring("abcabcbb") == 3);
+  assert(lengthOfLongestSubstring("bbbbb") == 1);
+  assert(lengthOfLongestSubstring("pwwkew") == 3);
 }
