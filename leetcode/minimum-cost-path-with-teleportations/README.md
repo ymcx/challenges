@@ -1,3 +1,3 @@
 # TODO
 
-Make it pass the testcases successfully
+Make it faster in order to pass the check
