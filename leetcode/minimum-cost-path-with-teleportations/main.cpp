@@ -8,14 +8,28 @@ vector<pair<int, int>> getTeleports(const vector<vector<int>> &grid,
                                     const size_t i, const size_t j) {
   const size_t height = grid.size();
   const size_t width = grid[0].size();
-
+  const int cost = grid[i][j];
   vector<pair<int, int>> teleports;
 
   for (size_t y = 0; y < height; ++y) {
     for (size_t x = 0; x < width; ++x) {
-      if ((y != i || x != j) && grid[y][x] <= grid[i][j]) {
-        teleports.emplace_back(y, x);
+      // Don't add the current tile
+      if (y == i && x == j) {
+        continue;
       }
+
+      // Don't move to any tile that is further away
+      // from the goal position in both axis
+      if (y < i && x < j) {
+        continue;
+      }
+
+      // Don't add any tile that has a larger cost
+      if (cost < grid[y][x]) {
+        continue;
+      }
+
+      teleports.emplace_back(y, x);
     }
   }
 
@@ -26,7 +40,6 @@ int minCost(const vector<vector<int>> &grid, const int k) {
   const size_t height = grid.size();
   const size_t width = grid[0].size();
 
-  int minCost = INT_MAX;
   vector<vector<vector<int>>> cache(
       height, vector<vector<int>>(width, vector<int>(k + 1, INT_MAX)));
   queue<tuple<size_t, size_t, int, bool, int>> que;
@@ -36,40 +49,40 @@ int minCost(const vector<vector<int>> &grid, const int k) {
     auto [i, j, cost, teleported, k] = que.front();
     que.pop();
 
-    // Out-of-bounds
-    if (i >= height || j >= width) {
-      continue;
-    }
-
     // Only take the cost of the current tile into account
     // if we haven't moved to it by teleporting
-    if (!teleported) {
-      cost += grid[i][j];
-    }
-
-    // Calculate the new minCost if we're at the bottom right-most tile
-    if (i == height - 1 && j == width - 1) {
-      minCost = min(minCost, cost);
-      continue;
-    }
+    cost += !teleported * grid[i][j];
 
     // If a better run exists, abort
     if (cache[i][j][k] <= cost) {
       continue;
+    } else {
+      cache[i][j][k] = cost;
     }
-    cache[i][j][k] = cost;
+
+    // Abort if we're at the bottom right-most tile, which is the goal tile
+    if (i == height - 1 && j == width - 1) {
+      continue;
+    }
 
     // Add potential teleports to the queue
-    if (k > 0) {
+    if (0 < k) {
       for (const auto &[y, x] : getTeleports(grid, i, j)) {
         que.emplace(y, x, cost, true, k - 1);
       }
     }
 
     // Add the manual movements to the queue
-    que.push({i + 1, j, cost, false, k});
-    que.push({i, j + 1, cost, false, k});
+    if (i + 1 < height) {
+      que.emplace(i + 1, j, cost, false, k);
+    }
+    if (j + 1 < width) {
+      que.emplace(i, j + 1, cost, false, k);
+    }
   }
+
+  const vector<int> &goalCosts = cache[height - 1][width - 1];
+  const int minCost = *min_element(goalCosts.begin(), goalCosts.end());
 
   return minCost;
 }
