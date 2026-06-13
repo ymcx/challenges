@@ -1,64 +1,79 @@
+#include <algorithm>
 #include <cassert>
 #include <climits>
+#include <iostream>
 #include <queue>
+#include <vector>
 
 using namespace std;
 
-vector<pair<int, int>> getTeleports(const vector<vector<int>> &grid,
-                                    const size_t i, const size_t j) {
+void addTeleports(queue<tuple<size_t, size_t, int, int>> &que,
+                  const vector<vector<int>> &grid,
+                  const vector<pair<size_t, size_t>> &points, const size_t i,
+                  const size_t j, const int cost, const int k) {
+  for (const auto &[y, x] : points) {
+    // Don't add the current tile
+    if (y == i && x == j) {
+      continue;
+    }
+
+    // Don't move to any tile that is further away
+    // from the goal position in both axis
+    if (y < i && x < j) {
+      continue;
+    }
+
+    // Don't add any tile that has a larger cost
+    // We can abort since the points vector is sorted by cost
+    if (grid[i][j] < grid[y][x]) {
+      break;
+    }
+
+    que.emplace(y, x, cost, k);
+  }
+}
+
+vector<pair<size_t, size_t>> getPoints(const vector<vector<int>> &grid) {
   const size_t height = grid.size();
   const size_t width = grid[0].size();
-  const int cost = grid[i][j];
-  vector<pair<int, int>> teleports;
+
+  vector<pair<size_t, size_t>> points;
+  points.reserve(width * height);
 
   for (size_t y = 0; y < height; ++y) {
     for (size_t x = 0; x < width; ++x) {
-      // Don't add the current tile
-      if (y == i && x == j) {
-        continue;
-      }
-
-      // Don't move to any tile that is further away
-      // from the goal position in both axis
-      if (y < i && x < j) {
-        continue;
-      }
-
-      // Don't add any tile that has a larger cost
-      if (cost < grid[y][x]) {
-        continue;
-      }
-
-      teleports.emplace_back(y, x);
+      points.emplace_back(y, x);
     }
   }
 
-  return teleports;
+  const auto comp = [&grid](const pair<size_t, size_t> &a,
+                            const pair<size_t, size_t> &b) {
+    return grid[a.first][a.second] < grid[b.first][b.second];
+  };
+  sort(points.begin(), points.end(), comp);
+
+  return points;
 }
 
 int minCost(const vector<vector<int>> &grid, const int k) {
   const size_t height = grid.size();
   const size_t width = grid[0].size();
 
+  const vector<pair<size_t, size_t>> points = getPoints(grid);
   vector<vector<vector<int>>> cache(
       height, vector<vector<int>>(width, vector<int>(k + 1, INT_MAX)));
-  queue<tuple<size_t, size_t, int, bool, int>> que;
-  que.emplace(0, 0, 0, true, k);
+  queue<tuple<size_t, size_t, int, int>> que;
+  que.emplace(0, 0, 0, k);
 
   while (!que.empty()) {
-    auto [i, j, cost, teleported, k] = que.front();
+    const auto [i, j, cost, k] = que.front();
     que.pop();
-
-    // Only take the cost of the current tile into account
-    // if we haven't moved to it by teleporting
-    cost += !teleported * grid[i][j];
 
     // If a better run exists, abort
     if (cache[i][j][k] <= cost) {
       continue;
-    } else {
-      cache[i][j][k] = cost;
     }
+    cache[i][j][k] = cost;
 
     // Abort if we're at the bottom right-most tile, which is the goal tile
     if (i == height - 1 && j == width - 1) {
@@ -67,22 +82,22 @@ int minCost(const vector<vector<int>> &grid, const int k) {
 
     // Add potential teleports to the queue
     if (0 < k) {
-      for (const auto &[y, x] : getTeleports(grid, i, j)) {
-        que.emplace(y, x, cost, true, k - 1);
-      }
+      addTeleports(que, grid, points, i, j, cost, k - 1);
     }
 
     // Add the manual movements to the queue
     if (i + 1 < height) {
-      que.emplace(i + 1, j, cost, false, k);
+      que.emplace(i + 1, j, cost + grid[i + 1][j], k);
     }
     if (j + 1 < width) {
-      que.emplace(i, j + 1, cost, false, k);
+      que.emplace(i, j + 1, cost + grid[i][j + 1], k);
     }
   }
 
   const vector<int> &goalCosts = cache[height - 1][width - 1];
   const int minCost = *min_element(goalCosts.begin(), goalCosts.end());
+
+  cout << minCost << endl;
 
   return minCost;
 }
@@ -168,6 +183,59 @@ void example6() {
   assert(minCost(input, 8) == 3183);
 }
 
+void example7() {
+  vector<vector<int>> input = {
+      {610, 483, 591, 230, 212, 318, 620, 652, 511, 858, 582, 749, 439, 192,
+       710, 375, 230},
+      {490, 843, 572, 813, 187, 488, 939, 555, 296, 400, 771, 372, 738, 263,
+       105, 235, 326},
+      {702, 1034, 585, 360, 453, 971, 849, 922, 329, 829, 707, 269, 686, 707,
+       355, 669, 1022},
+      {1170, 1038, 1090, 896, 330, 928, 412, 416, 733, 600, 866, 501, 310, 452,
+       289, 949, 887},
+      {489, 561, 519, 1203, 742, 650, 1228, 821, 1107, 579, 451, 1079, 391, 754,
+       657, 1242, 1091},
+      {1346, 1225, 742, 504, 900, 593, 1097, 859, 1096, 639, 470, 718, 1209,
+       694, 1126, 1235, 831},
+      {1188, 1140, 964, 1227, 1136, 942, 1399, 721, 1346, 996, 575, 1294, 876,
+       628, 758, 1255, 899},
+      {1074, 1351, 848, 1100, 1417, 809, 1300, 1124, 1173, 1367, 654, 1277, 810,
+       1409, 1324, 659, 1417},
+      {1063, 1145, 1211, 1003, 1042, 896, 1196, 1583, 820, 1507, 1344, 1327,
+       874, 1121, 1473, 764, 1601},
+      {1479, 1086, 933, 1303, 832, 910, 1508, 1063, 1244, 1632, 1061, 1287,
+       1388, 936, 1082, 1221, 921},
+      {1140, 1212, 1254, 1236, 1308, 1716, 904, 1071, 1657, 1542, 1743, 1651,
+       1631, 1083, 1633, 947, 1029},
+      {1613, 1736, 1036, 1222, 1499, 1529, 1613, 1397, 1586, 1722, 1257, 1138,
+       1840, 1531, 1080, 1866, 1710},
+      {1466, 1800, 1341, 1519, 1248, 1891, 1579, 1784, 1366, 1583, 1434, 1689,
+       1201, 1273, 1587, 1231, 1911},
+      {1716, 1839, 1610, 1172, 1590, 1453, 1246, 1773, 1310, 2021, 1377, 1479,
+       1241, 1832, 1604, 1684, 1347},
+      {1578, 1949, 1428, 1916, 1749, 1277, 1496, 1327, 1383, 1917, 1482, 1574,
+       1375, 1760, 1571, 1758, 1384},
+      {2183, 1694, 1929, 1823, 1413, 1588, 1375, 1770, 2150, 1552, 2060, 1462,
+       1542, 1752, 2117, 1641, 1927},
+      {1676, 1617, 1471, 1761, 1735, 2292, 1544, 1843, 1851, 2036, 1500, 1607,
+       1513, 1586, 1942, 2125, 2037},
+      {2237, 1635, 1628, 1613, 2076, 2128, 2278, 2023, 1548, 1569, 2115, 2068,
+       2265, 1769, 2151, 2081, 2274},
+      {2497, 1733, 2172, 1671, 1739, 2457, 1986, 2318, 2026, 2018, 2488, 2080,
+       2356, 2295, 2272, 2292, 1926},
+      {2158, 1897, 2543, 2101, 1788, 2241, 2243, 1902, 2109, 1943, 2131, 2285,
+       2317, 2284, 2255, 1801, 2491},
+      {2552, 2350, 2314, 2274, 2470, 2283, 2533, 2422, 2074, 2569, 1901, 2030,
+       1827, 2362, 2356, 2281, 2208},
+      {2298, 2109, 2449, 2416, 2060, 2036, 2061, 2435, 2780, 2594, 2544, 2783,
+       2657, 2783, 2151, 1904, 2030},
+      {2669, 2471, 2438, 2453, 2603, 2209, 2608, 2291, 2661, 2501, 2537, 2827,
+       2412, 2061, 2714, 2152, 2718},
+      {2145, 2751, 2310, 2227, 2106, 2263, 2470, 2654, 2692, 2085, 2927, 2488,
+       2240, 2165, 2319, 2243, 3060}};
+  assert(minCost(input, 10) == 7697);
+}
+
 int main() {
   example1();
   example2();
@@ -175,4 +243,5 @@ int main() {
   example4();
   example5();
   example6();
+  example7();
 }
