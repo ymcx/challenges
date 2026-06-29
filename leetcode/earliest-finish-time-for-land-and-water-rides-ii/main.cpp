@@ -12,11 +12,17 @@ int earliestFinishTimeCondition(vector<int> &startTime1, vector<int> &duration1,
   int min1 = INT_MAX;
   int min2 = INT_MAX;
 
-  for (const auto &&[s, d] : views::zip(startTime1, duration1)) {
+  for (size_t i = 0; i < startTime1.size(); ++i) {
+    const int s = startTime1[i];
+    const int d = duration1[i];
+
     min1 = min(min1, s + d);
   }
 
-  for (const auto &&[s, d] : views::zip(startTime2, duration2)) {
+  for (size_t i = 0; i < startTime2.size(); ++i) {
+    const int s = startTime2[i];
+    const int d = duration2[i];
+
     min2 = min(min2, max(s, min1) + d);
   }
 

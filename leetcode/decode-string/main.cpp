@@ -51,7 +51,7 @@ int getIntegersBefore(const string &s, const int end) {
 }
 
 string decodeString(string s) {
-  while (s.contains('[')) {
+  while (s.find('[') != string::npos) {
     const auto [i, j] = findMatchingBrackets(s);
     const int repeat_n = getIntegersBefore(s, i);
     const int repeat_n_length = 1 + log(repeat_n) / log(10);

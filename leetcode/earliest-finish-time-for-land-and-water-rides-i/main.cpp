@@ -1,7 +1,5 @@
-#include <algorithm>
 #include <cassert>
 #include <climits>
-#include <ranges>
 #include <vector>
 
 using namespace std;
@@ -10,14 +8,27 @@ int earliestFinishTime(vector<int> &landStartTime, vector<int> &landDuration,
                        vector<int> &waterStartTime,
                        vector<int> &waterDuration) {
   int lowest = INT_MAX;
-  for (const auto &&[s1, d1] : views::zip(landStartTime, landDuration)) {
-    for (const auto &&[s2, d2] : views::zip(waterStartTime, waterDuration)) {
+
+  for (size_t i = 0; i < landStartTime.size(); ++i) {
+    const int s1 = landStartTime[i];
+    const int d1 = landDuration[i];
+
+    for (size_t j = 0; j < waterStartTime.size(); ++j) {
+      const int s2 = waterStartTime[j];
+      const int d2 = waterDuration[j];
+
       lowest = min(lowest, max(s1 + d1, s2) + d2);
     }
   }
 
-  for (const auto &&[s1, d1] : views::zip(waterStartTime, waterDuration)) {
-    for (const auto &&[s2, d2] : views::zip(landStartTime, landDuration)) {
+  for (size_t i = 0; i < waterStartTime.size(); ++i) {
+    const int s1 = waterStartTime[i];
+    const int d1 = waterDuration[i];
+
+    for (size_t j = 0; j < landStartTime.size(); ++j) {
+      const int s2 = landStartTime[j];
+      const int d2 = landDuration[j];
+
       lowest = min(lowest, max(s1 + d1, s2) + d2);
     }
   }

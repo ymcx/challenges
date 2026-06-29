@@ -1,7 +1,6 @@
 #include <algorithm>
 #include <cassert>
 #include <climits>
-#include <iostream>
 #include <queue>
 #include <vector>
 
@@ -96,8 +95,6 @@ int minCost(const vector<vector<int>> &grid, const int k) {
 
   const vector<int> &goalCosts = cache[height - 1][width - 1];
   const int minCost = *min_element(goalCosts.begin(), goalCosts.end());
-
-  cout << minCost << endl;
 
   return minCost;
 }
