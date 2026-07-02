@@ -1,5 +1,5 @@
-#include "vector/vector.h"
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -8,68 +8,38 @@ typedef struct {
   int x;
 } Pair;
 
-bool pathExists(int **grid, bool **thiefAura, const int gridSize,
+bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
                 const int distance) {
-  for (int y = 0; y < gridSize; ++y) {
-    for (int x = 0; x < gridSize; ++x) {
-      thiefAura[y][x] = false;
+  // Reset the grid of checked positions
+  for (int y = 0; y != gridSize; ++y) {
+    for (int x = 0; x != gridSize; ++x) {
+      checkedGrid[y][x] = false;
     }
   }
 
-  // Fill the map with positions that are within the given distance from the
-  // thief
-  for (int y = 0; y < gridSize; ++y) {
-    for (int x = 0; x < gridSize; ++x) {
-      // The position contains no thief
-      if (grid[y][x] == 0) {
-        continue;
-      }
+  Pair vector[16384] = {{0, 0}};
+  int items = 1;
 
-      // Calculate the manhattan distance from the thief
-      for (int dy = -distance; dy <= distance; ++dy) {
-        for (int dx = -distance + abs(dy); dx <= distance - abs(dy); ++dx) {
-          const int ny = y + dy;
-          const int nx = x + dx;
-
-          // Out-of-bounds
-          if (ny < 0 || nx < 0 || ny >= gridSize || nx >= gridSize) {
-            continue;
-          }
-
-          // The thief is close enough to the start/end position
-          if ((ny == 0 && nx == 0) ||
-              (ny == gridSize - 1 && nx == gridSize - 1)) {
-            return false;
-          }
-
-          thiefAura[ny][nx] = true;
-        }
-      }
-    }
-  }
-
-  Pair start = {0, 0};
-  Vector *vector = vector_create(512, sizeof(Pair));
-  vector_push_back(vector, &start);
-
-  // Decide whether a path exists from the start position to the end position
-  while (!vector_empty(vector)) {
-    const Pair *point = vector_back(vector);
-    vector_pop_back(vector);
-
-    const int y = point->y;
-    const int x = point->x;
+  while (items != 0) {
+    const Pair point = vector[--items];
+    const int y = point.y;
+    const int x = point.x;
 
     // Out-of-bounds
-    if (y < 0 || x < 0 || y >= gridSize || x >= gridSize) {
+    if (y == -1 || x == -1 || y == gridSize || x == gridSize) {
+      continue;
+    }
+
+    // The position is too close to a thief
+    if (distanceGrid[y][x] < distance) {
       continue;
     }
 
     // The position has been checked already
-    if (thiefAura[y][x]) {
+    if (checkedGrid[y][x]) {
       continue;
     }
-    thiefAura[y][x] = true;
+    checkedGrid[y][x] = true;
 
     // We're at the end position, a path exists
     if (y == gridSize - 1 && x == gridSize - 1) {
@@ -81,13 +51,34 @@ bool pathExists(int **grid, bool **thiefAura, const int gridSize,
     const Pair point2 = {y, x + 1};
     const Pair point3 = {y - 1, x};
     const Pair point4 = {y, x - 1};
-    vector_push_back(vector, &point1);
-    vector_push_back(vector, &point2);
-    vector_push_back(vector, &point3);
-    vector_push_back(vector, &point4);
+    vector[items++] = point1;
+    vector[items++] = point2;
+    vector[items++] = point3;
+    vector[items++] = point4;
   }
 
   return false;
+}
+
+int getDistance(const int y1, const int x1, int **grid, const int gridSize) {
+  int distance = INT_MAX;
+
+  for (int y2 = 0; y2 != gridSize; ++y2) {
+    for (int x2 = 0; x2 != gridSize; ++x2) {
+      // No thief at the position, skip
+      if (grid[y2][x2] == 0) {
+        continue;
+      }
+
+      // Calculate the distance from the given coordinates to this thief
+      const int newDistance = abs(y2 - y1) + abs(x2 - x1);
+      if (newDistance < distance) {
+        distance = newDistance;
+      }
+    }
+  }
+
+  return distance;
 }
 
 int maximumSafenessFactor(int **grid, const int gridSize,
@@ -95,24 +86,31 @@ int maximumSafenessFactor(int **grid, const int gridSize,
   int distanceMax = gridSize;
   int distanceMin = 0;
 
-  bool **thiefAura = malloc(gridSize * sizeof(bool *));
-  for (int y = 0; y < gridSize; ++y) {
-    thiefAura[y] = malloc(gridSize * sizeof(bool));
+  int **distanceGrid = malloc(gridSize * sizeof(int *));
+  bool **checkedGrid = malloc(gridSize * sizeof(bool *));
+  for (int y = 0; y != gridSize; ++y) {
+    distanceGrid[y] = malloc(gridSize * sizeof(int));
+    checkedGrid[y] = malloc(gridSize * sizeof(bool));
+    for (int x = 0; x != gridSize; ++x) {
+      distanceGrid[y][x] = getDistance(y, x, grid, gridSize);
+    }
   }
 
-  while (distanceMin + 1 < distanceMax) {
+  while (distanceMin + 1 != distanceMax) {
     const int distance = distanceMin + (distanceMax - distanceMin) / 2;
-    if (pathExists(grid, thiefAura, gridSize, distance - 1)) {
+    if (pathExists(checkedGrid, distanceGrid, gridSize, distance)) {
       distanceMin = distance;
     } else {
       distanceMax = distance;
     }
   }
 
-  for (int y = 0; y < gridSize; ++y) {
-    free(thiefAura[y]);
+  for (int y = 0; y != gridSize; ++y) {
+    free(distanceGrid[y]);
+    free(checkedGrid[y]);
   }
-  free(thiefAura);
+  free(distanceGrid);
+  free(checkedGrid);
 
   return distanceMin;
 }
@@ -154,8 +152,21 @@ void example3(void) {
   assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 2);
 }
 
+void example4(void) {
+  int gridRow1[3] = {0, 1, 1};
+  int gridRow2[3] = {0, 1, 1};
+  int gridRow3[3] = {0, 0, 1};
+  int *grid[3] = {gridRow1, gridRow2, gridRow3};
+
+  const int gridSize = 3;
+  const int gridColSize[3] = {3, 3, 3};
+
+  assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 0);
+}
+
 int main(void) {
   example1();
   example2();
   example3();
+  example4();
 }
