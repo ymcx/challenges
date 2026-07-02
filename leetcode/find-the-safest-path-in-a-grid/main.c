@@ -1,5 +1,6 @@
 #include "vector/vector.h"
 #include <assert.h>
+#include <stdbool.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -7,20 +8,18 @@ typedef struct {
   int x;
 } Pair;
 
-int pathExists(int **grid, const int gridSize, const int *gridColSize,
-               const int distance) {
-  int **copy = malloc(gridSize * sizeof(int *));
-  for (int i = 0; i < gridSize; i++) {
-    copy[i] = malloc(gridColSize[i] * sizeof(int));
-    for (int j = 0; j < gridColSize[i]; j++) {
-      copy[i][j] = 0;
+bool pathExists(int **grid, bool **thiefAura, const int gridSize,
+                const int distance) {
+  for (int y = 0; y < gridSize; ++y) {
+    for (int x = 0; x < gridSize; ++x) {
+      thiefAura[y][x] = false;
     }
   }
 
   // Fill the map with positions that are within the given distance from the
   // thief
   for (int y = 0; y < gridSize; ++y) {
-    for (int x = 0; x < gridColSize[y]; ++x) {
+    for (int x = 0; x < gridSize; ++x) {
       // The position contains no thief
       if (grid[y][x] == 0) {
         continue;
@@ -33,17 +32,17 @@ int pathExists(int **grid, const int gridSize, const int *gridColSize,
           const int nx = x + dx;
 
           // Out-of-bounds
-          if (ny < 0 || nx < 0 || ny >= gridSize || nx >= gridColSize[ny]) {
+          if (ny < 0 || nx < 0 || ny >= gridSize || nx >= gridSize) {
             continue;
           }
 
           // The thief is close enough to the start/end position
           if ((ny == 0 && nx == 0) ||
-              (ny == gridSize - 1 && nx == gridColSize[ny] - 1)) {
-            return 0;
+              (ny == gridSize - 1 && nx == gridSize - 1)) {
+            return false;
           }
 
-          copy[ny][nx] = 1;
+          thiefAura[ny][nx] = true;
         }
       }
     }
@@ -62,19 +61,19 @@ int pathExists(int **grid, const int gridSize, const int *gridColSize,
     const int x = point->x;
 
     // Out-of-bounds
-    if (y < 0 || x < 0 || y >= gridSize || x >= gridColSize[y]) {
+    if (y < 0 || x < 0 || y >= gridSize || x >= gridSize) {
       continue;
     }
 
     // The position has been checked already
-    if (copy[y][x] == 1) {
+    if (thiefAura[y][x]) {
       continue;
     }
-    copy[y][x] = 1;
+    thiefAura[y][x] = true;
 
     // We're at the end position, a path exists
-    if (y == gridSize - 1 && x == gridColSize[y] - 1) {
-      return 1;
+    if (y == gridSize - 1 && x == gridSize - 1) {
+      return true;
     }
 
     // Add the adjacent positions to the queue
@@ -88,23 +87,34 @@ int pathExists(int **grid, const int gridSize, const int *gridColSize,
     vector_push_back(vector, &point4);
   }
 
-  for (int i = 0; i < gridSize; i++) {
-    free(copy[i]);
-  }
-  free(copy);
-
-  return 0;
+  return false;
 }
 
 int maximumSafenessFactor(int **grid, const int gridSize,
                           const int *gridColSize) {
-  for (int distance = gridSize - 1; 0 < distance; --distance) {
-    if (pathExists(grid, gridSize, gridColSize, distance - 1)) {
-      return distance;
+  int distanceMax = gridSize;
+  int distanceMin = 0;
+
+  bool **thiefAura = malloc(gridSize * sizeof(bool *));
+  for (int y = 0; y < gridSize; ++y) {
+    thiefAura[y] = malloc(gridSize * sizeof(bool));
+  }
+
+  while (distanceMin + 1 < distanceMax) {
+    const int distance = distanceMin + (distanceMax - distanceMin) / 2;
+    if (pathExists(grid, thiefAura, gridSize, distance - 1)) {
+      distanceMin = distance;
+    } else {
+      distanceMax = distance;
     }
   }
 
-  return 0;
+  for (int y = 0; y < gridSize; ++y) {
+    free(thiefAura[y]);
+  }
+  free(thiefAura);
+
+  return distanceMin;
 }
 
 void example1(void) {
