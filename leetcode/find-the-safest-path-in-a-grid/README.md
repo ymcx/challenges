@@ -1,3 +1,3 @@
 # TODO
 
-Make it pass the unit tests & clean up the code
+Make it faster in order to pass the check
