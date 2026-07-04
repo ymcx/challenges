@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
 #include <stdlib.h>
 
@@ -16,7 +17,7 @@ bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
     }
   }
 
-  Pair vector[16384] = {{0, 0}};
+  Pair vector[32768] = {{0, 0}};
   int items = 1;
 
   while (items > 0) {
@@ -60,30 +61,54 @@ bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
   return false;
 }
 
-int getDistance(const int y, const int x, int **grid, const int gridSize) {
-  int distance = 0;
-
-  while (true) {
-    for (int dy = -distance; dy <= distance; ++dy) {
-      const int dx = abs(dy) - distance;
-      const int ny = y + dy;
-      const int nx1 = x + dx;
-      const int nx2 = x - dx;
-
-      if (ny < 0 || ny >= gridSize) {
+void fillDistanceGrid(int **distanceGrid, int **grid, const int gridSize) {
+  for (int y = 0; y < gridSize; ++y) {
+    for (int x = 0; x < gridSize; ++x) {
+      // Not a thief
+      if (grid[y][x] != 1) {
         continue;
       }
 
-      if ((nx1 >= 0 && grid[ny][nx1] == 1) ||
-          (nx2 < gridSize && grid[ny][nx2] == 1)) {
-        return distance;
+      for (int distance = 0; distance < gridSize - 1; ++distance) {
+        for (int dy = -distance; dy <= distance; ++dy) {
+          const int dx = abs(dy) - distance;
+          const int ny = y + dy;
+          const int nx1 = x + dx;
+          const int nx2 = x - dx;
+
+          if (ny < 0 || ny >= gridSize) {
+            continue;
+          }
+
+          if (nx1 >= 0 && distanceGrid[ny][nx1] > distance) {
+            distanceGrid[ny][nx1] = distance;
+          }
+
+          if (nx2 < gridSize && distanceGrid[ny][nx2] > distance) {
+            distanceGrid[ny][nx2] = distance;
+          }
+        }
       }
     }
+  }
+}
 
-    ++distance;
+int smallestDistance(bool **checkedGrid, int **distanceGrid,
+                     const int gridSize) {
+  int max = gridSize;
+  int min = 0;
+
+  while (min + 1 < max) {
+    const int distance = min + (max - min) / 2;
+
+    if (pathExists(checkedGrid, distanceGrid, gridSize, distance)) {
+      min = distance;
+    } else {
+      max = distance;
+    }
   }
 
-  return -1;
+  return min;
 }
 
 int maximumSafenessFactor(int **grid, const int gridSize,
@@ -94,20 +119,12 @@ int maximumSafenessFactor(int **grid, const int gridSize,
     distanceGrid[y] = malloc(gridSize * sizeof(int));
     checkedGrid[y] = malloc(gridSize * sizeof(bool));
     for (int x = 0; x < gridSize; ++x) {
-      distanceGrid[y][x] = getDistance(y, x, grid, gridSize);
+      distanceGrid[y][x] = INT_MAX;
     }
   }
 
-  int distanceMax = gridSize;
-  int distanceMin = 0;
-  while (distanceMin + 1 < distanceMax) {
-    const int distance = distanceMin + (distanceMax - distanceMin) / 2;
-    if (pathExists(checkedGrid, distanceGrid, gridSize, distance)) {
-      distanceMin = distance;
-    } else {
-      distanceMax = distance;
-    }
-  }
+  fillDistanceGrid(distanceGrid, grid, gridSize);
+  const int distance = smallestDistance(checkedGrid, distanceGrid, gridSize);
 
   for (int y = 0; y < gridSize; ++y) {
     free(distanceGrid[y]);
@@ -116,7 +133,7 @@ int maximumSafenessFactor(int **grid, const int gridSize,
   free(distanceGrid);
   free(checkedGrid);
 
-  return distanceMin;
+  return distance;
 }
 
 void example1(void) {
