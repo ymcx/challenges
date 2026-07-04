@@ -17,7 +17,7 @@ bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
     }
   }
 
-  Pair vector[16384] = {{0, 0}};
+  Pair vector[65536] = {{0, 0}};
   int items = 1;
 
   while (items != 0) {
@@ -60,42 +60,49 @@ bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
   return false;
 }
 
-int getDistance(const int y1, const int x1, int **grid, const int gridSize) {
-  int distance = INT_MAX;
+int getDistance(const int y, const int x, int **grid, const int gridSize) {
+  int distance = 0;
 
-  for (int y2 = 0; y2 != gridSize; ++y2) {
-    for (int x2 = 0; x2 != gridSize; ++x2) {
-      // No thief at the position, skip
-      if (grid[y2][x2] == 0) {
+  while (1) {
+    for (int dy = -distance; dy <= distance; ++dy) {
+      const int dx = abs(dy) - distance;
+      const int ny = y + dy;
+      const int nx1 = x + dx;
+      const int nx2 = x - dx;
+
+      if (ny < 0 || ny >= gridSize) {
         continue;
       }
 
-      // Calculate the distance from the given coordinates to this thief
-      const int newDistance = abs(y2 - y1) + abs(x2 - x1);
-      if (newDistance < distance) {
-        distance = newDistance;
+      if (nx1 >= 0 && nx1 < gridSize && grid[ny][nx1] == 1) {
+        return distance;
+      }
+
+      if (nx2 >= 0 && nx2 < gridSize && grid[ny][nx2] == 1) {
+        return distance;
       }
     }
+
+    ++distance;
   }
 
-  return distance;
+  return -1;
 }
 
 int maximumSafenessFactor(int **grid, const int gridSize,
                           const int *gridColSize) {
-  int distanceMax = gridSize;
-  int distanceMin = 0;
-
   int **distanceGrid = malloc(gridSize * sizeof(int *));
   bool **checkedGrid = malloc(gridSize * sizeof(bool *));
-  for (int y = 0; y != gridSize; ++y) {
+  for (int y = 0; y < gridSize; ++y) {
     distanceGrid[y] = malloc(gridSize * sizeof(int));
     checkedGrid[y] = malloc(gridSize * sizeof(bool));
-    for (int x = 0; x != gridSize; ++x) {
+    for (int x = 0; x < gridSize; ++x) {
       distanceGrid[y][x] = getDistance(y, x, grid, gridSize);
     }
   }
 
+  int distanceMax = gridSize;
+  int distanceMin = 0;
   while (distanceMin + 1 != distanceMax) {
     const int distance = distanceMin + (distanceMax - distanceMin) / 2;
     if (pathExists(checkedGrid, distanceGrid, gridSize, distance)) {
@@ -164,9 +171,40 @@ void example4(void) {
   assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 0);
 }
 
+void example5(void) {
+  int gridRow01[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow02[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow03[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow04[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow05[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow06[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow07[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow08[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow09[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow10[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow11[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+  int gridRow12[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+  int gridRow13[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0};
+  int gridRow14[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow15[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+  int gridRow16[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1};
+  int gridRow17[17] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0};
+  int *grid[17] = {gridRow01, gridRow02, gridRow03, gridRow04, gridRow05,
+                   gridRow06, gridRow07, gridRow08, gridRow09, gridRow10,
+                   gridRow11, gridRow12, gridRow13, gridRow14, gridRow15,
+                   gridRow16, gridRow17};
+
+  const int gridSize = 17;
+  const int gridColSize[17] = {17, 17, 17, 17, 17, 17, 17, 17, 17,
+                               17, 17, 17, 17, 17, 17, 17, 17};
+
+  assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 1);
+}
+
 int main(void) {
   example1();
   example2();
   example3();
   example4();
+  example5();
 }
