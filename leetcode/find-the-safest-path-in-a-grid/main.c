@@ -3,65 +3,74 @@
 #include <stdbool.h>
 #include <stdlib.h>
 
-typedef struct {
-  int y;
-  int x;
-} Pair;
-
-bool pathExists(bool **checkedGrid, int **distanceGrid, const int gridSize,
-                const int distance) {
+bool pathExists(bool *checked, const int *distance, const int gridSize,
+                const int d) {
   // Reset the grid of checked positions
-  for (int y = 0; y < gridSize; ++y) {
-    for (int x = 0; x < gridSize; ++x) {
-      checkedGrid[y][x] = false;
-    }
+  for (int i = 0; i < gridSize * gridSize; ++i) {
+    checked[i] = false;
   }
 
-  Pair vector[32768] = {{0, 0}};
+  const int yGoal = gridSize - 1;
+  const int xGoal = gridSize - 1;
+  const int iGoal = yGoal * gridSize + xGoal;
+
+  // Initializing the queue with y=0, x=-1. This will make it so that only y=0,
+  // x=0 is added after the first iteration and y=0, x=0 is handled like a
+  // normal position.
+  int queue[16384] = {-1};
   int items = 1;
 
   while (items > 0) {
-    const Pair point = vector[--items];
-    const int y = point.y;
-    const int x = point.x;
+    const int i = queue[--items];
+    const int y = i / gridSize;
+    const int x = i % gridSize;
 
-    // The position is too close to a thief or has been checked already
-    if (checkedGrid[y][x] || distanceGrid[y][x] < distance) {
-      continue;
-    }
-    checkedGrid[y][x] = true;
+    // For loop for the four adjacent positions
+    for (int dy = -1; dy <= 1; ++dy) {
+      for (int dx = abs(dy) - 1; dx <= 1 - abs(dy); ++dx) {
+        if (dy == 0 && dx == 0) {
+          continue;
+        }
 
-    // We're at the end position, a path exists
-    if (y == gridSize - 1 && x == gridSize - 1) {
-      return true;
-    }
+        const int ny = y + dy;
+        const int nx = x + dx;
 
-    // Add the adjacent positions to the queue
-    if (y + 1 < gridSize) {
-      const Pair point = {y + 1, x};
-      vector[items++] = point;
-    }
+        // Out-of-bounds
+        if (ny < 0 || nx < 0 || ny >= gridSize || nx >= gridSize) {
+          continue;
+        }
 
-    if (x + 1 < gridSize) {
-      const Pair point = {y, x + 1};
-      vector[items++] = point;
-    }
+        const int ni = ny * gridSize + nx;
 
-    if (y - 1 >= 0) {
-      const Pair point = {y - 1, x};
-      vector[items++] = point;
-    }
+        // The position has been checked already
+        if (checked[ni]) {
+          continue;
+        }
+        checked[ni] = true;
 
-    if (x - 1 >= 0) {
-      const Pair point = {y, x - 1};
-      vector[items++] = point;
+        // The position is too close to a thief
+        if (distance[ni] < d) {
+          continue;
+        }
+
+        // We're at the end position, a path exists
+        if (ni == iGoal) {
+          return true;
+        }
+
+        queue[items++] = ni;
+      }
     }
   }
 
   return false;
 }
 
-void fillDistanceGrid(int **distanceGrid, int **grid, const int gridSize) {
+void fillDistance(int *distance, int **grid, const int gridSize) {
+  for (int i = 0; i < gridSize * gridSize; ++i) {
+    distance[i] = INT_MAX;
+  }
+
   for (int y = 0; y < gridSize; ++y) {
     for (int x = 0; x < gridSize; ++x) {
       // Not a thief
@@ -69,23 +78,33 @@ void fillDistanceGrid(int **distanceGrid, int **grid, const int gridSize) {
         continue;
       }
 
-      for (int distance = 0; distance < gridSize - 1; ++distance) {
-        for (int dy = -distance; dy <= distance; ++dy) {
-          const int dx = abs(dy) - distance;
+      for (int d = 0; d < gridSize - 1; ++d) {
+        for (int dy = -d; dy <= d; ++dy) {
           const int ny = y + dy;
-          const int nx1 = x + dx;
-          const int nx2 = x - dx;
 
+          // the y coordinate is out-of-bounds
           if (ny < 0 || ny >= gridSize) {
             continue;
           }
 
-          if (nx1 >= 0 && distanceGrid[ny][nx1] > distance) {
-            distanceGrid[ny][nx1] = distance;
+          const int dx1 = abs(dy) - d;
+          const int nx1 = x + dx1;
+          const int i1 = ny * gridSize + nx1;
+
+          // No need to check for nx1 < gridSize, since nx1 is always smaller
+          // than x, which itself always resides within the grid
+          if (nx1 >= 0 && distance[i1] > d) {
+            distance[i1] = d;
           }
 
-          if (nx2 < gridSize && distanceGrid[ny][nx2] > distance) {
-            distanceGrid[ny][nx2] = distance;
+          const int dx2 = d - abs(dy);
+          const int nx2 = x + dx2;
+          const int i2 = ny * gridSize + nx2;
+
+          // No need to check for nx2 >= 0, since nx2 is always larger than x,
+          // which itself always resides within the grid
+          if (nx2 < gridSize && distance[i2] > d) {
+            distance[i2] = d;
           }
         }
       }
@@ -93,18 +112,17 @@ void fillDistanceGrid(int **distanceGrid, int **grid, const int gridSize) {
   }
 }
 
-int smallestDistance(bool **checkedGrid, int **distanceGrid,
-                     const int gridSize) {
+int largestDistance(bool *checked, const int *distance, const int gridSize) {
   int max = gridSize;
   int min = 0;
 
   while (min + 1 < max) {
-    const int distance = min + (max - min) / 2;
+    const int d = min + (max - min) / 2;
 
-    if (pathExists(checkedGrid, distanceGrid, gridSize, distance)) {
-      min = distance;
+    if (pathExists(checked, distance, gridSize, d)) {
+      min = d;
     } else {
-      max = distance;
+      max = d;
     }
   }
 
@@ -113,27 +131,16 @@ int smallestDistance(bool **checkedGrid, int **distanceGrid,
 
 int maximumSafenessFactor(int **grid, const int gridSize,
                           const int *gridColSize) {
-  int **distanceGrid = malloc(gridSize * sizeof(int *));
-  bool **checkedGrid = malloc(gridSize * sizeof(bool *));
-  for (int y = 0; y < gridSize; ++y) {
-    distanceGrid[y] = malloc(gridSize * sizeof(int));
-    checkedGrid[y] = malloc(gridSize * sizeof(bool));
-    for (int x = 0; x < gridSize; ++x) {
-      distanceGrid[y][x] = INT_MAX;
-    }
-  }
+  int *distance = malloc(gridSize * gridSize * sizeof(int));
+  bool *checked = malloc(gridSize * gridSize * sizeof(bool));
 
-  fillDistanceGrid(distanceGrid, grid, gridSize);
-  const int distance = smallestDistance(checkedGrid, distanceGrid, gridSize);
+  fillDistance(distance, grid, gridSize);
+  const int d = largestDistance(checked, distance, gridSize);
 
-  for (int y = 0; y < gridSize; ++y) {
-    free(distanceGrid[y]);
-    free(checkedGrid[y]);
-  }
-  free(distanceGrid);
-  free(checkedGrid);
+  free(distance);
+  free(checked);
 
-  return distance;
+  return d;
 }
 
 void example1(void) {
@@ -215,10 +222,23 @@ void example5(void) {
   assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 1);
 }
 
+void example6(void) {
+  int gridRow1[3] = {1, 1, 1};
+  int gridRow2[3] = {0, 1, 1};
+  int gridRow3[3] = {0, 0, 0};
+  int *grid[3] = {gridRow1, gridRow2, gridRow3};
+
+  const int gridSize = 3;
+  const int gridColSize[3] = {3, 3, 3};
+
+  assert(maximumSafenessFactor(grid, gridSize, gridColSize) == 0);
+}
+
 int main(void) {
   example1();
   example2();
   example3();
   example4();
   example5();
+  example6();
 }
