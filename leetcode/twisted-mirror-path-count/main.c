@@ -14,11 +14,10 @@ int add(int (*queue)[3], int i, int gridSize, int *gridColSize, int y, int x,
   return 1;
 }
 
-int uniquePaths(int **grid, int gridSize, int *gridColSize) {
+int isresult(int **grid, int gridSize, int *gridColSize, int y, int x) {
   int result = 0;
   int (*queue)[3] = malloc(sizeof(int[3]) * 1000);
   int i = add(queue, 0, gridSize, gridColSize, 0, 0, 0);
-
   while (i != 0) {
     --i;
     int y = queue[i][0];
@@ -43,9 +42,38 @@ int uniquePaths(int **grid, int gridSize, int *gridColSize) {
     i += add(queue, i, gridSize, gridColSize, y, x + 1, 1);
   }
 
-  free(queue);
-
   return result;
+}
+
+int uniquePaths(int **grid, int gridSize, int *gridColSize) {
+  // int result = 0;
+  // int (*queue)[3] = malloc(sizeof(int[3]) * 1000);
+  // int i = add(queue, 0, gridSize, gridColSize, 0, 0, 0);
+
+  int **rigi = malloc(sizeof(int *) * gridSize);
+  for (int j = 0; j < gridSize; ++j) {
+    rigi[j] = malloc(sizeof(int) * gridColSize[j]);
+    for (int k = 0; k < gridColSize[j]; ++k) {
+      rigi[j][k] = 0;
+    }
+    int a = gridSize - 1 + gridColSize[gridSize - 1] - 2;
+    while (a >= 0) {
+      int y = 0;
+      int x = a;
+      while (x >= 0) {
+        if (y < gridSize && x < gridColSize[y]) {
+          rigi[y][x] = isresult(grid, gridSize, gridColSize, y, x);
+        }
+
+        y += 1;
+        x -= 1;
+      }
+
+      --a;
+    }
+  }
+
+  return rigi[0][0];
 }
 
 int example1() {
