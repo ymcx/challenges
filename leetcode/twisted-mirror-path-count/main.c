@@ -1,79 +1,67 @@
 #include <assert.h>
 #include <stdlib.h>
 
-int add(int (*queue)[3], int i, int gridSize, int *gridColSize, int y, int x,
-        int d) {
-  if (y >= gridSize || x >= gridColSize[y]) {
+int solution_amount(int (**cache)[2], int **grid, const int y_max,
+                    const int x_max, const int y, const int x, const int d) {
+  if (y == y_max || x == x_max) {
     return 0;
   }
 
-  queue[i][0] = y;
-  queue[i][1] = x;
-  queue[i][2] = d;
+  if (cache[y][x][d] != -1) {
+    return cache[y][x][d];
+  }
 
-  return 1;
+  if (d == 1 && grid[y][x]) {
+    return solution_amount(cache, grid, y_max, x_max, y + 1, x, 0);
+  }
+
+  if (d == 0 && grid[y][x]) {
+    return solution_amount(cache, grid, y_max, x_max, y, x + 1, 1);
+  }
+
+  const int a = solution_amount(cache, grid, y_max, x_max, y + 1, x, 0);
+  const int b = solution_amount(cache, grid, y_max, x_max, y, x + 1, 1);
+  return (a + b) % 1000000007;
 }
 
-int isresult(int **grid, int gridSize, int *gridColSize, int y, int x) {
-  int result = 0;
-  int (*queue)[3] = malloc(sizeof(int[3]) * 1000);
-  int i = add(queue, 0, gridSize, gridColSize, 0, 0, 0);
-  while (i != 0) {
-    --i;
-    int y = queue[i][0];
-    int x = queue[i][1];
-    int d = queue[i][2];
+int uniquePaths(int **grid, const int gridSize, const int *gridColSize) {
+  int y_max = gridSize;
+  int x_max = gridColSize[0];
 
-    if (y == gridSize - 1 && x == gridColSize[y] - 1) {
-      ++result;
-      continue;
+  int (**cache)[2] = malloc(sizeof(int *[2]) * y_max);
+  for (int y = 0; y < y_max; ++y) {
+    cache[y] = malloc(sizeof(int[2]) * x_max);
+    for (int x = 0; x < x_max; ++x) {
+      cache[y][x][0] = -1;
+      cache[y][x][1] = -1;
     }
-
-    if (grid[y][x]) {
-      if (d == 1) {
-        i += add(queue, i, gridSize, gridColSize, y + 1, x, 0);
-      } else {
-        i += add(queue, i, gridSize, gridColSize, y, x + 1, 1);
-      }
-      continue;
-    }
-
-    i += add(queue, i, gridSize, gridColSize, y + 1, x, 0);
-    i += add(queue, i, gridSize, gridColSize, y, x + 1, 1);
   }
+  cache[y_max - 1][x_max - 1][0] = 1;
+  cache[y_max - 1][x_max - 1][1] = 1;
+
+  for (int i = y_max + x_max - 3; i >= 0; --i) {
+    for (int y = 0, x = i; x >= 0; ++y, --x) {
+      if (y >= y_max || x >= x_max) {
+        continue;
+      }
+
+      cache[y][x][0] = solution_amount(cache, grid, y_max, x_max, y, x, 0);
+      if (grid[y][x]) {
+        cache[y][x][1] = solution_amount(cache, grid, y_max, x_max, y, x, 1);
+      } else {
+        cache[y][x][1] = cache[y][x][0];
+      }
+    }
+  }
+
+  const int result = cache[0][0][0];
+
+  for (int y = 0; y < y_max; ++y) {
+    free(cache[y]);
+  }
+  free(cache);
 
   return result;
-}
-
-int uniquePaths(int **grid, int gridSize, int *gridColSize) {
-  // int result = 0;
-  // int (*queue)[3] = malloc(sizeof(int[3]) * 1000);
-  // int i = add(queue, 0, gridSize, gridColSize, 0, 0, 0);
-
-  int **rigi = malloc(sizeof(int *) * gridSize);
-  for (int j = 0; j < gridSize; ++j) {
-    rigi[j] = malloc(sizeof(int) * gridColSize[j]);
-    for (int k = 0; k < gridColSize[j]; ++k) {
-      rigi[j][k] = 0;
-    }
-    int a = gridSize - 1 + gridColSize[gridSize - 1] - 2;
-    while (a >= 0) {
-      int y = 0;
-      int x = a;
-      while (x >= 0) {
-        if (y < gridSize && x < gridColSize[y]) {
-          rigi[y][x] = isresult(grid, gridSize, gridColSize, y, x);
-        }
-
-        y += 1;
-        x -= 1;
-      }
-
-      --a;
-    }
-  }
-
-  return rigi[0][0];
 }
 
 int example1() {
@@ -143,8 +131,29 @@ int example3() {
   return result;
 }
 
+int example4() {
+  int gridSize = 1000;
+  int gridColSize[1] = {gridSize};
+  int **grid = malloc(sizeof(int *) * gridSize);
+  for (int i = 0; i < gridSize; ++i) {
+    grid[i] = malloc(sizeof(int) * gridColSize[0]);
+    for (int j = 0; j < gridColSize[0]; ++j) {
+      grid[i][j] = 0;
+    }
+  }
+
+  int result = uniquePaths(grid, gridSize, gridColSize) == 965601742;
+  for (int i = 0; i < gridSize; ++i) {
+    free(grid[i]);
+  }
+  free(grid);
+
+  return result;
+}
+
 int main(void) {
   assert(example1());
   assert(example2());
   assert(example3());
+  assert(example4());
 }
