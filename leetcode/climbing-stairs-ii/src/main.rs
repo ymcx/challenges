@@ -1,40 +1,20 @@
-fn get_cost(i: usize, j: usize, costs: &[usize]) -> usize {
-    costs[j - 1] + (j - i).pow(2)
-}
+fn climb_stairs(n: i32, costs: Vec<i32>) -> i32 {
+    let n = n as usize;
+    let costs: Vec<usize> = costs.into_iter().map(|i| i as usize).collect();
 
-fn climb_stairs_usize(n: usize, costs: &[usize]) -> usize {
     let mut cache = vec![usize::MAX; n + 1];
-    let mut queue = vec![(0, 0)];
+    cache[0] = 0;
 
-    while let Some((step, cost)) = queue.pop() {
-        if cache[step] <= cost {
-            continue;
-        }
+    for j in 1..=n {
+        for jump in 1..=3.min(j) {
+            let i = j - jump;
+            let cost = cache[i] + costs[j - 1] + jump * jump;
 
-        let mut i = step;
-        loop {
-            cache[i] = cost;
-            if i == 0 {
-                break;
-            }
-            i -= 1;
-            if cache[i] <= cost {
-                break;
-            }
-        }
-
-        for step_new in (step + 1..=step + 3).take_while(|&i| i <= n) {
-            let cost_new = cost + get_cost(step, step_new, &costs);
-            queue.push((step_new, cost_new));
+            cache[j] = cache[j].min(cost);
         }
     }
 
-    cache[n]
-}
-
-fn climb_stairs(n: i32, costs: Vec<i32>) -> i32 {
-    let costs: Vec<usize> = costs.into_iter().map(|i| i as usize).collect();
-    climb_stairs_usize(n as usize, &costs) as i32
+    cache[n] as i32
 }
 
 fn example1() {
