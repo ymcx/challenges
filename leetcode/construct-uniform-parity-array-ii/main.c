@@ -1,50 +1,22 @@
 #include <assert.h>
+#include <limits.h>
 #include <stdbool.h>
-#include <stdlib.h>
-
-int comp(const void *a, const void *b) {
-  const int x = *(const int *)a;
-  const int y = *(const int *)b;
-  return x > y;
-}
-
-void sort(int *nums1, int nums1Size) {
-  qsort(nums1, nums1Size, sizeof(int), comp);
-}
-
-bool condition_first(int *nums1, int odd, int i) { return nums1[i] % 2 == odd; }
-
-bool condition_second(int *nums1, int odd, int i) {
-  for (int j = 0; j < i; ++j) {
-    if ((nums1[i] - nums1[j]) % 2 == odd) {
-      return true;
-    }
-  }
-
-  return false;
-}
-
-bool uniformArrayOdd(int *nums1, int nums1Size, int odd) {
-  for (int i = 0; i < nums1Size; ++i) {
-    if (condition_first(nums1, odd, i)) {
-      continue;
-    }
-
-    if (condition_second(nums1, odd, i)) {
-      continue;
-    }
-
-    return false;
-  }
-
-  return true;
-}
 
 bool uniformArray(int *nums1, int nums1Size) {
-  sort(nums1, nums1Size);
+  bool odd = false;
+  int smallest = nums1[0];
 
-  return uniformArrayOdd(nums1, nums1Size, false) ||
-         uniformArrayOdd(nums1, nums1Size, true);
+  for (int i = 0; i < nums1Size; ++i) {
+    if (nums1[i] < smallest) {
+      smallest = nums1[i];
+    }
+
+    if (nums1[i] % 2) {
+      odd = true;
+    }
+  }
+
+  return smallest % 2 || !odd;
 }
 
 void example1() {
