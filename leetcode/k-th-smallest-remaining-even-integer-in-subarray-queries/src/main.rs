@@ -1,28 +1,27 @@
+fn kth_remaining_integer_query(nums: &Vec<i32>, l: usize, r: usize, k: i32) -> i32 {
+    let mut count = 0;
+    for &num in &nums[l..=r] {
+        if num > (k + count) * 2 {
+            break;
+        }
+
+        if num % 2 == 0 {
+            count += 1;
+        }
+    }
+
+    (k + count) * 2
+}
+
 fn kth_remaining_integer(nums: Vec<i32>, queries: Vec<Vec<i32>>) -> Vec<i32> {
-    let nums: Vec<usize> = nums.into_iter().map(|i| i as usize).collect();
+    let mut answers = Vec::with_capacity(queries.len());
+    for query in &queries {
+        let (l, r, k) = (query[0], query[1], query[2]);
+        let answer = kth_remaining_integer_query(&nums, l as usize, r as usize, k);
+        answers.push(answer);
+    }
 
-    queries
-        .into_iter()
-        .map(|query| {
-            let (l, r, k) = (query[0] as usize, query[1] as usize, query[2] as usize);
-            let mut count = 0;
-
-            loop {
-                let c = nums[l..=r]
-                    .iter()
-                    .filter(|&&i| i % 2 == 0 && i <= (k + count) * 2)
-                    .count();
-
-                if c == count {
-                    break;
-                }
-
-                count = c;
-            }
-
-            ((k + count) * 2) as i32
-        })
-        .collect()
+    answers
 }
 
 fn example1() {
@@ -50,8 +49,10 @@ fn example4() {
 }
 
 fn main() {
-    example1();
-    example2();
-    example3();
-    example4();
+    for _ in 0..200000 {
+        example1();
+        example2();
+        example3();
+        example4();
+    }
 }
